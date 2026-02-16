@@ -76,7 +76,6 @@ export const createRestaurant = async (req, res, next) => {
   try {
     const { name, address, phone, cuisine, tables } = req.body;
 
-    // Owner is automatically set to the logged-in user
     const ownerId = req.user.userId;
 
     // Check if user already owns a restaurant (optional business rule)
@@ -91,7 +90,7 @@ export const createRestaurant = async (req, res, next) => {
       phone,
       cuisine,
       tables,
-      ownerId,
+      //ownerId,
       isActive: true,
     });
 

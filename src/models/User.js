@@ -14,7 +14,9 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",
     required: function () {
-      return this.role === "staff"; // ✅ only staff requires restaurantId
+      return (
+        this.role === "staff" || this.role === "owner" || this.role === "admin"
+      );
     },
   },
   isActive: { type: Boolean, default: true },
