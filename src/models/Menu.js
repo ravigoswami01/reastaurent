@@ -2,7 +2,13 @@ import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
 
-const MENU_CATEGORIES = ["appetizer", "main", "dessert", "beverage"];
+const MENU_CATEGORIES = [
+  "Burgers & Fries",
+  "Pizza",
+  "Sandwiches & Wraps",
+  "Fried & Crispy",
+  "main",
+];
 
 const menuItemSchema = new Schema(
   {
@@ -12,12 +18,12 @@ const menuItemSchema = new Schema(
       required: true,
       index: true,
     },
-
     name: {
       type: String,
+      required: [true, "Item name is required"],
       trim: true,
-      minlength: 2,
-      maxlength: 120,
+      minlength: [2, "Name must be at least 2 characters"],
+      maxlength: [120, "Name must be at most 120 characters"],
     },
 
     description: {
@@ -27,9 +33,14 @@ const menuItemSchema = new Schema(
       default: "",
     },
 
+    rating: {
+      average: { type: Number, default: 0, min: 0, max: 5 },
+      count: { type: Number, default: 0 },
+    },
+
     price: {
       type: Number,
-      required: true,
+      required: [true, "Price is required"],
       min: [0, "Price must be >= 0"],
       set: (v) => Math.round(v * 100) / 100,
     },
@@ -42,6 +53,12 @@ const menuItemSchema = new Schema(
     },
 
     imageUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    imagePublicId: {
       type: String,
       trim: true,
       default: "",
@@ -64,23 +81,8 @@ const menuItemSchema = new Schema(
   },
 );
 
-menuItemSchema.index({
-  name: "text",
-  description: "text",
-});
-
-menuItemSchema.index({
-  restaurantId: 1,
-  category: 1,
-  isActive: 1,
-});
-
-menuItemSchema.set("toJSON", {
-  transform: (_, ret) => {
-    delete ret.__v;
-    return ret;
-  },
-});
+menuItemSchema.index({ name: "text", description: "text" });
+menuItemSchema.index({ restaurantId: 1, category: 1, isActive: 1 });
 
 const MenuItem = model("MenuItem", menuItemSchema);
 
