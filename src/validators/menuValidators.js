@@ -1,6 +1,12 @@
 import { body, validationResult } from "express-validator";
 
-const categories = ["appetizer", "main", "dessert", "beverage"];
+const categories = [
+  "Burgers & Fries",
+  "Pizza",
+  "Sandwiches & Wraps",
+  "Fried & Crispy",
+  "main",
+];
 
 export const validateMenuItem = [
   body("price")
