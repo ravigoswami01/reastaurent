@@ -171,7 +171,11 @@ export const createOrder = async (req, res, next) => {
           .status(400)
           .json({ error: `Menu item not found: ${item.menuItemId}` });
       }
-      if (!menuItem.name || !menuItem.price) {
+      if (
+        !menuItem.name ||
+        menuItem.price == null ||
+        isNaN(Number(menuItem.price))
+      ) {
         await session.abortTransaction();
         session.endSession();
         return res
@@ -249,6 +253,7 @@ export const createOrder = async (req, res, next) => {
       total: order.total.toFixed(2),
       eta: 30,
     };
+
     if (order.customerId?.email) {
       sendEmail(
         order.customerId.email,
@@ -256,6 +261,7 @@ export const createOrder = async (req, res, next) => {
         templateData,
       ).catch((err) => console.error("Email send failed:", err));
     }
+
     res.status(201).json(order);
   } catch (err) {
     await session.abortTransaction();

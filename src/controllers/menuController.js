@@ -95,7 +95,6 @@ export const getAllMenuItems = async (req, res, next) => {
         .sort(sort),
       MenuItem.countDocuments(filter),
     ]);
-    c;
 
     res.json({
       items,

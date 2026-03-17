@@ -7,6 +7,7 @@ import restaurantRoutes from "./src/routes/restaurantRoutes.js";
 import menuRoutes from "./src/routes/menuRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js";
 import categoryRoutes from "./src/routes/categoryRoutes.js";
+import cartRoutes from "./src/routes/cartRouter.js";
 dotenv.config();
 
 // Connect to MongoDB
@@ -27,7 +28,7 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
-
+app.use("/api/cart", cartRoutes);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on localhost:${PORT}`);
