@@ -26,6 +26,7 @@
     "nodemailer": "^8.0.1",
     "nodemon": "^3.1.11",
     "streamifier": "^0.1.1",
-    "twilio": "^5.12.1"
+     "twilio": "^5.12.1",
+    "yamljs": "^0.3.0"
   }
 }
