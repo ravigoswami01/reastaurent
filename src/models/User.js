@@ -7,18 +7,15 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ["customer", "staff", "owner", "admin"],
+    enum: ["customer", "staff", "owner", "admin", "manager"],
     default: "customer",
   },
-  restaurantId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Restaurant",
-    required: function () {
-      return (
-        this.role === "staff" || this.role === "owner" || this.role === "admin"
-      );
+  restaurantIds: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
     },
-  },
+  ],
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
 });
@@ -32,5 +29,4 @@ userSchema.methods.comparePassword = async function (candidate) {
   return await bcrypt.compare(candidate, this.password);
 };
 
-const User = mongoose.model("User", userSchema);
-export default User;
+export default mongoose.model("User", userSchema);
