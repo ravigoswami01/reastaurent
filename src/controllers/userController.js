@@ -8,26 +8,11 @@ export const register = async (req, res, next) => {
     const { email, password, name, role, restaurantId } = req.body;
 
     if (!email || !password || !name || !role) {
-      return res
-        .status(400)
-        .json({ error: "Email, password, name, and role are required" });
+      return res.status(400).json({ error: "All fields are required" });
     }
 
-    if (!["customer", "staff", "owner"].includes(role)) {
+    if (!["admin", "owner", "manager", "staff", "customer"].includes(role)) {
       return res.status(400).json({ error: "Invalid role" });
-    }
-
-    if (role === "staff" && !restaurantId) {
-      return res
-        .status(400)
-        .json({ error: "restaurantId is required for staff role" });
-    }
-
-    if (role === "owner" && restaurantId) {
-      return res.status(400).json({
-        error:
-          "Owners should not provide restaurantId; use registerOwnerWithRestaurant",
-      });
     }
 
     const existingUser = await User.findOne({ email });
@@ -35,7 +20,39 @@ export const register = async (req, res, next) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
-    const user = new User({ email, password, name, role, restaurantId });
+    if ((role === "staff" || role === "manager") && !restaurantId) {
+      return res
+        .status(400)
+        .json({ error: "restaurantId is required for staff/manager" });
+    }
+
+    if (role === "owner") {
+      const user = new User({ email, password, name, role });
+      await user.save();
+
+      const token = generateToken(user);
+
+      return res.status(201).json({
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          restaurantId: null,
+        },
+        token,
+        nextStep: "CREATE_RESTAURANT",
+      });
+    }
+
+    const user = new User({
+      email,
+      password,
+      name,
+      role,
+      restaurantId: restaurantId || null,
+    });
+
     await user.save();
 
     const token = generateToken(user);
@@ -60,7 +77,7 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      return res.status(400).json({ error: "Email and password required" });
     }
 
     const user = await User.findOne({ email }).select("+password");
@@ -99,16 +116,14 @@ export const registerOwnerWithRestaurant = async (req, res, next) => {
 
     if (!name || !email || !password) {
       await session.abortTransaction();
-      return res
-        .status(400)
-        .json({ error: "Name, email, and password are required" });
+      return res.status(400).json({ error: "All fields required" });
     }
 
     if (!restaurant?.name || !restaurant?.address) {
       await session.abortTransaction();
       return res
         .status(400)
-        .json({ error: "Restaurant name and address are required" });
+        .json({ error: "Restaurant name and address required" });
     }
 
     const existingUser = await User.findOne({ email }).session(session);
@@ -120,7 +135,11 @@ export const registerOwnerWithRestaurant = async (req, res, next) => {
     const user = new User({ name, email, password, role: "owner" });
     await user.save({ session });
 
-    const newRestaurant = new Restaurant({ ...restaurant, ownerId: user._id });
+    const newRestaurant = new Restaurant({
+      ...restaurant,
+      ownerId: user._id,
+    });
+
     await newRestaurant.save({ session });
 
     user.restaurantId = newRestaurant._id;

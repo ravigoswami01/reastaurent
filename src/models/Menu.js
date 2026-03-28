@@ -1,14 +1,7 @@
 import mongoose from "mongoose";
-
 const { Schema, model } = mongoose;
 
-const MENU_CATEGORIES = [
-  "Burgers & Fries",
-  "Pizza",
-  "Sandwiches & Wraps",
-  "Fried & Crispy",
-  "main",
-];
+export const MENU_CATEGORIES = ["burgers", "pizza", "salads", "pasta", "desserts", "drinks"];
 
 const menuItemSchema = new Schema(
   {
@@ -20,55 +13,67 @@ const menuItemSchema = new Schema(
     },
     name: {
       type: String,
-      required: [true, "Item name is required"],
+      required: true,
       trim: true,
-      minlength: [2, "Name must be at least 2 characters"],
-      maxlength: [120, "Name must be at most 120 characters"],
+      minlength: 2,
+      maxlength: 120,
     },
-
     description: {
       type: String,
-      trim: true,
-      maxlength: 500,
       default: "",
+      maxlength: 500,
     },
-
     rating: {
       average: { type: Number, default: 0, min: 0, max: 5 },
       count: { type: Number, default: 0 },
     },
-
     price: {
       type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Price must be >= 0"],
-      set: (v) => Math.round(v * 100) / 100,
+      required: true,
+      min: 0,
     },
-
+    originalPrice: {
+      type: Number,
+      default: null,
+    },
     category: {
       type: String,
       enum: MENU_CATEGORIES,
-      default: "main",
+      required: true,
       index: true,
     },
-
     imageUrl: {
       type: String,
-      trim: true,
       default: "",
     },
-
     imagePublicId: {
       type: String,
-      trim: true,
       default: "",
     },
-
+    tags: {
+      type: [String],
+      required: [true, "At least one tag is required"],
+      validate: {
+        validator: (arr) => Array.isArray(arr) && arr.length >= 1,
+        message: "tags must contain at least one value",
+      },
+    },
+    prepTime: {
+      type: Number,
+      required: true,
+      min: [1, "Prep time must be at least 1 minute"],
+      default: 10,
+    },
+    calories: {
+      type: Number,
+      required: true,
+      min: [0, "Calories cannot be negative"],
+      default: 0,
+    },
     isAvailable: {
       type: Boolean,
       default: true,
     },
-
     isActive: {
       type: Boolean,
       default: true,
@@ -84,6 +89,4 @@ const menuItemSchema = new Schema(
 menuItemSchema.index({ name: "text", description: "text" });
 menuItemSchema.index({ restaurantId: 1, category: 1, isActive: 1 });
 
-const MenuItem = model("MenuItem", menuItemSchema);
-
-export default MenuItem;
+export default model("MenuItem", menuItemSchema);

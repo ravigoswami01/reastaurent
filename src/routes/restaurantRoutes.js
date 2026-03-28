@@ -1,37 +1,38 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { allowRoles, isResourceOwner } from "../middlewares/rbac.js";
-import Restaurant from "../models/Restaurant.js";
-import * as restaurantController from "../controllers/restaurantController.js";
+
+import {
+  getAllRestaurants,
+  createRestaurant,
+  updateRestaurant,
+  deleteRestaurant,
+} from "../controllers/restaurantController.js";
 
 const router = express.Router();
 
-router.get("/", restaurantController.getAllRestaurants);
-router.get("/:id", restaurantController.getRestaurantById);
+// ✅ Public
+router.get("/", getAllRestaurants);
 
-// ----------------------------------------------------------------------
-// All routes below require authentication
-// ----------------------------------------------------------------------
-router.use(authMiddleware);
+// ✅ Only OWNER can create
+router.post("/", isResourceOwner, allowRoles("owner"), createRestaurant);
 
-router.post(
-  "/create",
-  authMiddleware,
-  allowRoles("owner", "admin"),
-  restaurantController.createRestaurant,
-);
-
-// Update restaurant – only owner of that restaurant OR admin
+// ✅ Only OWNER of that restaurant can update
 router.put(
-  "/:id",
-  isResourceOwner(Restaurant, "id"),
-  restaurantController.updateRestaurant,
+  "/:restaurantId",
+  isResourceOwner,
+  allowRoles("owner"),
+  isResourceOwner,
+  updateRestaurant,
 );
 
+// ✅ Only OWNER of that restaurant can delete
 router.delete(
-  "/:id",
-  allowRoles("admin"),
-  restaurantController.deleteRestaurant,
+  "/:restaurantId",
+  isResourceOwner,
+  allowRoles("owner"),
+  authMiddleware,
+  deleteRestaurant,
 );
 
 export default router;
