@@ -9,6 +9,7 @@ import orderRoutes from "./src/routes/orderRoutes.js";
 import categoryRoutes from "./src/routes/categoryRoutes.js";
 import cartRoutes from "./src/routes/cartRouter.js";
 import bookingRoutes from "./src/routes/bookingRouter.js";
+import promoRoutes from "./src/routes/promoRouter.js";
 dotenv.config();
 
 // Connect to MongoDB
@@ -29,6 +30,7 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/promos", promoRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/bookings", bookingRoutes);
 // Start server
