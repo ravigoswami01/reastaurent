@@ -3,7 +3,8 @@ import MenuItem from "../models/Menu.js";
 
 const POPULATE_MENU_ITEM = {
   path: "items.menuItem",
-  select: "name description imageUrl price category isAvailable",
+  select:
+    "name description imageUrl price category isAvailable restaurantId", // <- added
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -14,7 +15,12 @@ const calculateTotal = (items) =>
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
   if (!cart) {
-    cart = new Cart({ user: userId, items: [], totalAmount: 0 });
+    cart = new Cart({
+      user: userId,
+      items: [],
+      totalAmount: 0,
+      restaurantId: null,
+    });
   }
   return cart;
 };
@@ -31,6 +37,7 @@ const saveAndPopulate = async (cart) => {
 export const getCart = async (req, res) => {
   try {
     const cart = await getOrCreateCart(req.user.id);
+    console.log("Cart retrieved/created:", cart);
 
     if (cart.isNew) {
       await cart.save();
@@ -75,6 +82,17 @@ export const addToCart = async (req, res) => {
     }
 
     const cart = await getOrCreateCart(req.user.id);
+
+    if (!cart.restaurantId) {
+      cart.restaurantId = menuItem.restaurantId;
+    } else if (
+      cart.restaurantId.toString() !== menuItem.restaurantId.toString()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart already has items from another restaurant",
+      });
+    }
 
     const existingIndex = cart.items.findIndex(
       (item) => item.menuItem.toString() === menuItemId
@@ -198,6 +216,7 @@ export const clearCart = async (req, res) => {
 
     cart.items = [];
     cart.totalAmount = 0;
+    cart.restaurantId = null;
     await cart.save();
 
     return res.status(200).json({ success: true, cart });

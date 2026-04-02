@@ -160,7 +160,7 @@ export const createOrder = async (req, res, next) => {
           total: populatedOrder.total.toFixed(2),
           eta: 30,
         },
-      ).catch(() => {});
+      ).catch(() => { });
     }
 
     res.status(201).json(populatedOrder);
