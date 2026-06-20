@@ -12,7 +12,7 @@ import bookingRoutes from "./src/routes/bookingRouter.js";
 import promoRoutes from "./src/routes/promoRouter.js";
 dotenv.config();
 
-// Connect to MongoDB
+// Connect to MongoDB//
 connectDB();
 
 const app = express();
