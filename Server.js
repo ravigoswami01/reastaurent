@@ -10,8 +10,8 @@ import categoryRoutes from "./src/routes/categoryRoutes.js";
 import cartRoutes from "./src/routes/cartRouter.js";
 import bookingRoutes from "./src/routes/bookingRouter.js";
 import promoRoutes from "./src/routes/promoRouter.js";
+import aiRoutes from "./src/routes/ai.routes.js";
 dotenv.config();
-
 // Connect to MongoDB//
 connectDB();
 
@@ -33,6 +33,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/promos", promoRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/ai", aiRoutes);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on localhost:${PORT}`);
