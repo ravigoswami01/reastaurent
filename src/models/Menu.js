@@ -1,7 +1,22 @@
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
-export const MENU_CATEGORIES = ["burgers", "pizza", "salads", "pasta", "desserts", "drinks"];
+export const MENU_CATEGORIES = [
+  "burgers",
+  "pizza",
+  "salads",
+  "pasta",
+  "desserts",
+  "drinks",
+  "burgers & fries",
+  "fried & crispy",
+  "sandwiches & wraps",
+  "main",
+  "appetizers",
+  "beverages",
+  "sides",
+  "starters",
+];
 
 const menuItemSchema = new Schema(
   {

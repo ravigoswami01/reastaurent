@@ -34,6 +34,18 @@ app.use("/api/promos", promoRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/ai", aiRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("API Error:", err);
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || "Internal Server Error",
+    details: err.errors || null,
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on localhost:${PORT}`);
