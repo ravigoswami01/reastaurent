@@ -8,15 +8,28 @@ const DEFAULT_LIMIT = 20;
 const toBool = (v) => v === true || v === "true";
 const parseNum = (v, d) => (Number.isNaN(parseInt(v)) ? d : parseInt(v));
 
+const categoryMap = {
+  "burgers & fries": "burgers & fries",
+  "fried & crispy": "fried & crispy",
+  "sandwiches & wraps": "sandwiches & wraps",
+  "pizza": "pizza",
+  "burgers": "burgers",
+  "salads": "salads",
+  "pasta": "pasta",
+  "desserts": "desserts",
+  "drinks": "drinks",
+  "beverages": "drinks",
+  "main": "main",
+  "main course": "main",
+  "appetizers": "appetizers",
+  "starters": "appetizers",
+  "sides": "sides",
+};
+
 const normalizeCategory = (cat) => {
-  const map = {
-    "Burgers & Fries": "burgers",
-    "Fried & Crispy": "burgers",
-    "Sandwiches & Wraps": "salads",
-    Pizza: "pizza",
-    main: "burgers",
-  };
-  return map[cat] || cat?.toLowerCase() || "burgers";
+  if (!cat || typeof cat !== "string") return "burgers";
+  const key = cat.trim().toLowerCase();
+  return categoryMap[key] || key;
 };
 
 const buildFilter = ({ restaurantId, category, search, isAvailable, minRating }) => {
@@ -51,20 +64,33 @@ const paginationMeta = (page, limit, total) => ({
   pages: Math.ceil(total / limit),
 });
 
-const authorizeRestaurantAccess = (user, targetRestaurantId) => {
+const authorizeRestaurantAccess = (user, targetRestaurantId, restaurant = null) => {
+  if (!user) {
+    const err = new Error("Unauthorized");
+    err.status = 401;
+    throw err;
+  }
+
   if (user.role === "admin") return;
 
-  if (!user.restaurantId) {
-    const err = new Error("No restaurant assigned");
-    err.status = 403;
-    throw err;
+  const userId = (user.id || user._id || user.userId)?.toString();
+  const targetId = targetRestaurantId?.toString();
+
+  const isOwnerOfRestaurant = restaurant && restaurant.ownerId && restaurant.ownerId.toString() === userId;
+  const isAssignedSingle = user.restaurantId && user.restaurantId.toString() === targetId;
+  const isAssignedArray = user.restaurantIds && user.restaurantIds.map((id) => id.toString()).includes(targetId);
+
+  if (isOwnerOfRestaurant || isAssignedSingle || isAssignedArray) {
+    return;
   }
 
-  if (user.restaurantId.toString() !== targetRestaurantId.toString()) {
-    const err = new Error("Unauthorized restaurant access");
-    err.status = 403;
-    throw err;
+  if (user.role === "owner" && (isAssignedArray || isAssignedSingle)) {
+    return;
   }
+
+  const err = new Error("Unauthorized restaurant access");
+  err.status = 403;
+  throw err;
 };
 
 const uploadImage = (buffer, mimetype) =>
@@ -84,16 +110,20 @@ const deleteImage = (publicId) => {
   return cloudinary.uploader.destroy(publicId);
 };
 
-const normalizeTags = (tags) => {
-  if (!tags) return [];
+const normalizeTags = (tags, defaultTag = "popular") => {
+  if (!tags) return [defaultTag];
   if (typeof tags === "string") {
-    return tags
+    const parsed = tags
       .split(",")
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean);
+    return parsed.length > 0 ? parsed : [defaultTag];
   }
-  if (Array.isArray(tags)) return tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
-  return [];
+  if (Array.isArray(tags)) {
+    const parsed = tags.map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+    return parsed.length > 0 ? parsed : [defaultTag];
+  }
+  return [defaultTag];
 };
 
 const formatItem = (item) => ({
@@ -164,13 +194,21 @@ export const createMenuItem = async (req, res, next) => {
     const restaurant = await Restaurant.findById(restaurantId).lean();
     if (!restaurant) return res.status(404).json({ error: "Restaurant not found" });
 
-    authorizeRestaurantAccess(req.user, restaurantId);
+    authorizeRestaurantAccess(req.user, restaurantId, restaurant);
 
-    let imageData = { url: "", publicId: "" };
+    let imageData = {
+      url: req.body.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
+      publicId: "",
+    };
 
     if (req.file) {
-      imageData = await uploadImage(req.file.buffer, req.file.mimetype);
-      uploadedPublicId = imageData.publicId;
+      try {
+        imageData = await uploadImage(req.file.buffer, req.file.mimetype);
+        uploadedPublicId = imageData.publicId;
+      } catch (uploadErr) {
+        console.warn("Cloudinary upload failed (using image fallback):", uploadErr.message || uploadErr);
+        if (req.body.imageUrl) imageData.url = req.body.imageUrl;
+      }
     }
 
     const item = await MenuItem.create({
@@ -199,15 +237,23 @@ export const updateMenuItem = async (req, res, next) => {
     const item = await MenuItem.findById(req.params.id);
     if (!item) return res.status(404).json({ error: "Not found" });
 
-    authorizeRestaurantAccess(req.user, item.restaurantId);
+    const restaurant = await Restaurant.findById(item.restaurantId).lean();
+    authorizeRestaurantAccess(req.user, item.restaurantId, restaurant);
 
     const oldPublicId = item.imagePublicId || null;
 
     if (req.file) {
-      const uploaded = await uploadImage(req.file.buffer, req.file.mimetype);
-      newPublicId = uploaded.publicId;
-      item.imageUrl = uploaded.url;
-      item.imagePublicId = uploaded.publicId;
+      try {
+        const uploaded = await uploadImage(req.file.buffer, req.file.mimetype);
+        newPublicId = uploaded.publicId;
+        item.imageUrl = uploaded.url;
+        item.imagePublicId = uploaded.publicId;
+      } catch (uploadErr) {
+        console.warn("Cloudinary upload failed (using existing/body imageUrl):", uploadErr.message || uploadErr);
+        if (req.body.imageUrl) item.imageUrl = req.body.imageUrl;
+      }
+    } else if (req.body.imageUrl) {
+      item.imageUrl = req.body.imageUrl;
     }
 
     const updatableFields = ["name", "description", "price", "originalPrice", "category", "isAvailable", "prepTime", "calories"];
@@ -240,7 +286,8 @@ export const deleteMenuItem = async (req, res, next) => {
     const item = await MenuItem.findById(req.params.id);
     if (!item) return res.status(404).json({ error: "Not found" });
 
-    authorizeRestaurantAccess(req.user, item.restaurantId);
+    const restaurant = await Restaurant.findById(item.restaurantId).lean();
+    authorizeRestaurantAccess(req.user, item.restaurantId, restaurant);
 
     item.isActive = false;
     await item.save();

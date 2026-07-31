@@ -10,9 +10,9 @@ import categoryRoutes from "./src/routes/categoryRoutes.js";
 import cartRoutes from "./src/routes/cartRouter.js";
 import bookingRoutes from "./src/routes/bookingRouter.js";
 import promoRoutes from "./src/routes/promoRouter.js";
+import aiRoutes from "./src/routes/ai.routes.js";
 dotenv.config();
-
-// Connect to MongoDB
+// Connect to MongoDB//
 connectDB();
 
 const app = express();
@@ -33,6 +33,19 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/promos", promoRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/ai", aiRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("API Error:", err);
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || "Internal Server Error",
+    details: err.errors || null,
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on localhost:${PORT}`);

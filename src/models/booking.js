@@ -24,8 +24,8 @@ const bookingSchema = new mongoose.Schema(
       min: 1,
     },
 
-    tableNumber: {
-      type: Number,
+    tableType: {
+      type: String,
       required: true,
     },
 
@@ -34,7 +34,7 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
 
-    timeSlot: {
+    time: {
       type: String,
       required: true,
     },
