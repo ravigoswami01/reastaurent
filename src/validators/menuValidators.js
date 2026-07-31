@@ -28,13 +28,14 @@ export const validateMenuItem = [
   body("category")
     .notEmpty().withMessage("Category is required")
     .custom((value) => {
-      if (typeof value !== "string") throw new Error("Category must be a string");
-      const normalized = value.trim().toLowerCase();
-      const acceptedLower = ACCEPTED_CATEGORIES.map((c) => c.toLowerCase());
-      if (acceptedLower.includes(normalized)) {
+      const normalized = value?.toLowerCase?.() ?? value;
+      if (
+        MENU_CATEGORIES.includes(normalized) ||
+        CATEGORY_ALIASES.includes(value)
+      ) {
         return true;
       }
-      throw new Error(`Invalid category. Accepted categories: ${MENU_CATEGORIES.join(", ")}`);
+      throw new Error(`Invalid category. Accepted: ${ACCEPTED_CATEGORIES.join(", ")}`);
     }),
 
   body("restaurantId")
@@ -42,11 +43,11 @@ export const validateMenuItem = [
     .isMongoId().withMessage("restaurantId must be a valid MongoDB ObjectId"),
 
   body("tags")
-    .optional()
+    .notEmpty().withMessage("At least one tag is required")
     .custom((value) => {
-      if (Array.isArray(value)) return true;
-      if (typeof value === "string") return true;
-      throw new Error("tags must be an array or string");
+      if (Array.isArray(value) && value.length > 0) return true;
+      if (typeof value === "string" && value.trim().length > 0) return true;
+      throw new Error("tags must be a non-empty array or comma-separated string");
     }),
 
   body("prepTime")

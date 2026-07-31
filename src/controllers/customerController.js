@@ -1,4 +1,5 @@
 import Restaurant from "../models/Restaurant.js";
+import Category from "../models/category.js";
 import MenuItem from "../models/Menu.js";
 
 export const getRestaurants = async (req, res, next) => {
@@ -40,20 +41,35 @@ export const getRestaurants = async (req, res, next) => {
 export const getCategories = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
 
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    const categories = await MenuItem.distinct("category", {
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const categories = await Category.find({
+      restaurantId,
+      isActive: true,
+    })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await Category.countDocuments({
       restaurantId,
       isActive: true,
     });
 
     res.json({
       categories,
-      count: categories.length,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (err) {
     next(err);

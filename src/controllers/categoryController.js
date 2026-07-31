@@ -5,13 +5,7 @@ const MENU_CATEGORIES = [
   "Pizza",
   "Sandwiches & Wraps",
   "Fried & Crispy",
-  "Pasta",
-  "Salads",
-  "Desserts",
-  "Drinks",
-  "Main",
-  "Appetizers",
-  "Sides",
+  "main",
 ];
 
 export const getCategories = async (req, res, next) => {
